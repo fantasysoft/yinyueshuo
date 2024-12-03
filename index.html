@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>声音克隆 - 让文字有声</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>声音克隆</h1>
+            <p class="subtitle">上传声音，让文字说话</p>
+        </header>
+
+        <main>
+            <!-- 上传区域 -->
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <svg class="upload-icon" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v4h3l-4 4-4-4h3z"/>
+                    </svg>
+                    <p>点击或拖拽上传音频</p>
+                    <span class="upload-hint">支持60秒以内的人声音频</span>
+                    <input type="file" id="audioInput" accept="audio/*" hidden>
+                </div>
+            </section>
+
+            <!-- 原始音频播放器 -->
+            <section class="player-section" id="originalAudioSection" hidden>
+                <h2>原始音频</h2>
+                <div class="audio-player">
+                    <audio id="originalAudio" controls></audio>
+                </div>
+            </section>
+
+            <!-- 文本输入区域 -->
+            <section class="text-section">
+                <h2>输入要转换的文字</h2>
+                <div class="text-input-container">
+                    <textarea 
+                        id="textInput" 
+                        placeholder="请输入要转换的文字（最多1000字）"
+                        maxlength="1000"
+                    ></textarea>
+                    <div class="word-count">
+                        <span id="currentCount">0</span>/1000
+                    </div>
+                </div>
+            </section>
+
+            <!-- 生成按钮 -->
+            <section class="action-section">
+                <button id="generateBtn" class="generate-btn" disabled>
+                    生成克隆音频
+                </button>
+            </section>
+
+            <!-- 生成的音频播放器 -->
+            <section class="player-section" id="generatedAudioSection" hidden>
+                <h2>生成的音频</h2>
+                <div class="audio-player">
+                    <audio id="generatedAudio" controls></audio>
+                </div>
+                <button id="downloadBtn" class="download-btn">
+                    下载音频
+                </button>
+            </section>
+        </main>
+    </div>
+    <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script src="script.js"></script>
+</body>
+</html> 
