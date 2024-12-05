@@ -97,12 +97,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 生成按钮点击事件
     generateBtn.addEventListener('click', async () => {
-        if (!originalAudio.src || !textInput.value) {
-            alert('请先上传音频并输入文字');
+        if (!audioFile || !textInput.value) {
+            showToast('请先上传音频并输入文字');
             return;
         }
 
-        // 调用生成克隆音频的函数
         await generateClonedAudio();
     });
 
@@ -127,60 +126,83 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 在 generateBtn 点击事件中添加
-    async function generateClonedAudio() {
-        const API_KEY = 'sk_f41cea3a5bc8b0d8569ec1776b5c74f4857a01d45e65c276';
-        const API_URL = 'https://api.elevenlabs.io/v1/voices/add';
+    // 修改生成音频的核心逻辑
+    async function generateAudio(voiceId, text) {
+        try {
+            console.log('Generating audio for voice:', voiceId);
+            const response = await fetch('http://localhost:3000/api/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    voice_id: voiceId
+                })
+            });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '音频生成失败');
+            }
+
+            const result = await response.json();
+            
+            if (!result.url) {
+                throw new Error('未获取到音频URL');
+            }
+
+            const audio = new Audio();
+            audio.src = result.url;
+
+            await new Promise((resolve, reject) => {
+                audio.onloadeddata = resolve;
+                audio.onerror = () => reject(new Error('音频加载失败'));
+                setTimeout(() => reject(new Error('音频加载超时')), 30000);
+            });
+
+            return audio;
+        } catch (error) {
+            console.error('Generate audio error:', error);
+            throw error;
+        }
+    }
+
+    // 修改生成函数，只支持声音克隆
+    async function generateClonedAudio() {
         try {
             generateBtn.disabled = true;
             generateBtn.textContent = '生成中...';
             loadingOverlay.style.display = 'flex';
 
-            // 第一步：创建声音ID
-            const voiceData = new FormData();
-            voiceData.append('name', 'Custom Voice');
-            voiceData.append('files', audioFile);
+            // 克隆声音
+            showToast('正在克隆声音...', 'info');
+            const formData = new FormData();
+            formData.append('voice_name', `Custom Voice ${new Date().getTime()}`);
+            formData.append('sample_file', audioFile);
 
-            const voiceResponse = await fetch(API_URL, {
+            const response = await fetch('http://localhost:3000/api/clone', {
                 method: 'POST',
-                headers: {
-                    'xi-api-key': API_KEY
-                },
-                body: voiceData
+                body: formData
             });
 
-            if (!voiceResponse.ok) {
-                throw new Error('声音创建失败，请检查网络连接或重试');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || '声音克隆失败');
             }
 
-            const { voice_id } = await voiceResponse.json();
+            const result = await response.json();
+            const voiceId = result.voice_id;
 
-            // 第二步：生成克隆音频
-            const synthesisResponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id}`, {
-                method: 'POST',
-                headers: {
-                    'xi-api-key': API_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    text: textInput.value,
-                    model_id: 'eleven_multilingual_v2'
-                })
-            });
-
-            if (!synthesisResponse.ok) {
-                throw new Error('音频生成失败，请稍后重试');
-            }
-
-            const audioBlob = await synthesisResponse.blob();
-            const audioUrl = URL.createObjectURL(audioBlob);
-            
-            // 显示生成的音频
-            document.getElementById('generatedAudio').src = audioUrl;
+            // 生成音频
+            showToast('正在生成音频...', 'info');
+            const audio = await generateAudio(voiceId, textInput.value);
+            document.getElementById('generatedAudio').src = audio.src;
             generatedAudioSection.hidden = false;
             showToast('音频生成成功！', 'success');
+
         } catch (error) {
+            console.error('Complete error:', error);
             showToast(error.message);
         } finally {
             generateBtn.disabled = false;
